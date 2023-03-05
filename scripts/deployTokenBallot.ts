@@ -3,47 +3,51 @@ import * as dotenv from 'dotenv';
 import { argv } from 'node:process';
 import { MyToken__factory, TokenizedBallot__factory } from '../typechain-types';
 
-dotenv.config({path: '../.env'});
+dotenv.config({path: __dirname+'/../.env'});
 
 const network = "sepolia";
-const account = "0x099A294Bffb99Cb2350A6b6cA802712D9C96676A";
 const privateKey = process.env.PRIVATE_KEY;
-const apiKey = process.env.ALCHEMY_API_KEY;
+const apiKey = process.env.INFURA_API_KEY;
 
 
 // SCRIPT SHOULD BE CALLED WITH ARGS (IN ORDER)
-// proposal_1 , ... , proposal_i , blockTarget
-const main =async () => {
+// proposal_1 , ... , proposal_i , 
+const main = async () => {
     const args = process.argv.slice(2);
-    console.log('args:', args);
     const proposals: any[] = [];
-    for (let i=0; i<args.length - 1; i++){
-        proposals.push(args[i]);
-    }
-    console.log(proposals);
-    console.log(privateKey);
-    console.log(apiKey);
+    args.map((e) => {
+        proposals.push(ethers.utils.formatBytes32String(e));
+    })
+    
+    if(!privateKey || privateKey.length <= 0) throw new Error("missing enviroment: PRIVATE_KEY");
+    if(!apiKey || apiKey.length <= 0) throw new Error("missing enviroment: API_KEY");
 
-    // if(!privateKey || privateKey.length <= 0) throw new Error("missing enviroment: PRIVATE_KEY");
-    // if(!apiKey || apiKey.length <= 0) throw new Error("missing enviroment: API_KEY");
+    const provider = new ethers.providers.InfuraProvider(network, apiKey);
+    const signer = new ethers.Wallet(privateKey, provider);
 
-    // const provider = new ethers.providers.AlchemyProvider(network, apiKey);
-    // const signer = new ethers.Wallet(privateKey, provider);
+    const lastBLock = await provider.getBlock("latest");
+    const blockTarget = lastBLock.number + 20;
+    console.log('lastblock', lastBLock.number, 'blockTarget', blockTarget);
+    
+    // const bal = await provider.getBalance(signer.address);
+    // console.log(bal.toString());
     
     // const tokenFactory = new MyToken__factory(signer);
     // console.log('deploying token contract');
     // const tokenContract = await tokenFactory.deploy();
     // console.log('pending...');
-    // const receipt = await tokenContract.deployTransaction.wait();
-    // console.log(`contract deployed to ${network} at address ${tokenContract.address} in tx ${receipt.transactionHash} at block ${receipt.blockNumber}`)
+    // const tokenReceipt = await tokenContract.deployTransaction.wait();
+    // console.log(`contract deployed to ${network} at address ${tokenContract.address} in tx ${tokenReceipt.transactionHash} at block ${tokenReceipt.blockNumber}`);
 
-    // const ballotFactory = new TokenizedBallot__factory(signer);
-    // console.log('deploying ballot contract...');
-    // const ballotContract = await ballotFactory.deploy();
+    const ballotFactory = new TokenizedBallot__factory(signer);
+    console.log('deploying ballot contract...');
+    const ballotContract = await ballotFactory.deploy(proposals, blockTarget);
+    console.log('pending...');
+    const ballotReceipt = await ballotContract.deployTransaction.wait();
+    console.log(`contract deployed to ${network} at address ${ballotContract.address} in tx ${ballotReceipt.transactionHash} at block ${ballotReceipt.blockNumber}`);
     
-
-
 }
+
 
 main().catch((err) => {
     console.error(err)
