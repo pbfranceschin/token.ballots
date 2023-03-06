@@ -22,6 +22,7 @@ const config: HardhatUserConfig = {
     hardhat: {
       chainId: 1337,
     },
+
   },
 
   // namedAccounts: {
