@@ -21,7 +21,8 @@ contract TokenizedBallot {
     Proposal[] public proposals;
 
     /// Create a new ballot to choose one of `proposalNames`.
-    constructor(bytes32[] memory proposalNames, uint256 _blockTarget) {
+    constructor(bytes32[] memory proposalNames, address _tokenContract, uint256 _blockTarget) {
+        tokenContract = IMyToken(_tokenContract);
         for (uint i = 0; i < proposalNames.length; i++) {
             blockTarget = _blockTarget;
             proposals.push(Proposal({
